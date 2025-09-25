@@ -1,0 +1,21 @@
+# Dockerfile
+
+node_modules
+npm-debug.log
+Dockerfile
+docker-compose.yml
+README.md
+.git
+.gitignore
+*.md
+*.log
+*.json
+*.yaml
+*.yml
+*.dockerignore
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

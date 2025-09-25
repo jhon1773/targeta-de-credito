@@ -99,13 +99,13 @@ app.use((err, req, res, next) => {
 });
 
 // Iniciar servidor
-app.listen(PORT, '127.0.0.1', () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log('=================================');
     console.log('🚀 VISE Payment API');
     console.log('=================================');
     console.log(`📍 Servidor ejecutándose en puerto ${PORT}`);
-    console.log(`🌐 URL: http://127.0.0.1:${PORT}`);
-    console.log(`📊 Estado: http://127.0.0.1:${PORT}/health`);
+    console.log(`🌐 URL: http://localhost:${PORT}`); // Cambiado para mostrar localhost
+    console.log(`📊 Estado: http://localhost:${PORT}/health`); // Cambiado para mostrar localhost
     console.log('=================================');
     console.log('📝 Endpoints disponibles:');
     console.log('   POST /client - Registrar cliente');
@@ -114,7 +114,8 @@ app.listen(PORT, '127.0.0.1', () => {
     console.log('=================================');
 }).on('error', (err) => {
     console.error('❌ Error al iniciar el servidor:', err.message);
-    console.error('💡 Asegúrate de que el puerto 3000 no esté en uso por otra aplicación');
+    console.log('💡 Asegúrate de que el puerto 3000 no esté en uso por otra aplicación');
+    process.exit(1);
 });
 
 module.exports = app;
