@@ -3,7 +3,7 @@ name: compilación del contenedor y ejecución de pruebas de la API de VISE
 on:
   workflow_dispatch:
     inputs:
-      PUERTO:
+      PORT:
         description: "El puerto de su aplicación"
         required: true
         default: "3000"
@@ -28,7 +28,7 @@ jobs:
       # Levantar contenedor
       - name: Run container
         run: |
-          docker run -d -p ${{ github.event.inputs.PUERTO }}:${{ github.event.inputs.PUERTO }} --name vise-api vise-api:latest
+          docker run -d -p ${{ github.event.inputs.PORT }}:${{ github.event.inputs.PORT }} --name vise-api vise-api:latest
           sleep 5
 
       # Instalar hurl
@@ -38,4 +38,4 @@ jobs:
       # Ejecutar pruebas de la API
       - name: API de prueba
         run: |
-          hurl --variable host=http://localhost:${{ github.event.inputs.PUERTO }} --error-format long --test session.hurl
+          hurl --variable host=http://localhost:${{ github.event.inputs.PORT }} --error-format long --test session.hurl
