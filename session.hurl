@@ -1,81 +1,41 @@
-```hurl
-# Classic - should register without restrictions
-POST {{host}}/client
-{
-  "name": "Alice Classic",
-  "country": "USA",
-  "monthlyIncome": 100,
-  "viseClub": false,
-  "cardType": "Classic"
-}
-HTTP 201
-[Captures]
-classic_id: jsonpath "$['clientId']"
-[Asserts]
-jsonpath "$.status" == "Registered"
-jsonpath "$.cardType" == "Classic"
+name: compilación del contenedor y ejecución de pruebas de la API de VISE
 
-# Gold - valid case (income >= 500)
-POST {{host}}/client
-{
-  "name": "Bob Gold",
-  "country": "USA",
-  "monthlyIncome": 600,
-  "viseClub": false,
-  "cardType": "Gold"
-}
-HTTP 201
-[Captures]
-gold_id: jsonpath "$['clientId']"
-[Asserts]
-jsonpath "$.status" == "Registered"
-jsonpath "$.cardType" == "Gold"
+on:
+  workflow_dispatch:
+    inputs:
+      PORT:
+        description: "El puerto de su aplicación"
+        required: true
+        default: "3000"
 
-# Platinum - valid case (income >= 1000, Vise CLUB)
-POST {{host}}/client
-{
-  "name": "Bob Gold",
-  "country": "USA",
-  "monthlyIncome": 1200,
-  "viseClub": true,
-  "cardType": "Platinum"
-}
-HTTP 201
-[Captures]
-platinum_id: jsonpath "$['clientId']"
-[Asserts]
-jsonpath "$.status" == "Registered"
-jsonpath "$.cardType" == "Platinum"
+jobs:
+  prueba:
+    runs-on: ubuntu-latest
+    steps:
+      # Descargar el código del repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-# Black - valid case (income >= 2000, Vise CLUB, USA country)
-POST {{host}}/client
-{
-  "name": "Bob Gold",
-  "country": "USA",
-  "monthlyIncome": 2100,
-  "viseClub": true,
-  "cardType": "Black"
-}
-HTTP 201
-[Captures]
-black_id: jsonpath "$['clientId']"
-[Asserts]
-jsonpath "$.status" == "Registered"
-jsonpath "$.cardType" == "Black"
+      # Instalar docker
+      - name: Configurar docker
+        uses: docker/setup-buildx-action@v3
 
-# White - valid case (income >= 2000, Vise CLUB, USA country)
-POST {{host}}/client
-{
-  "name": "Bob Gold",
-  "country": "USA",
-  "monthlyIncome": 2100,
-  "viseClub": true,
-  "cardType": "White"
-}
-HTTP 201
-[Captures]
-white_id: jsonpath "$['clientId']"
-[Asserts]
-jsonpath "$.status" == "Registered"
-jsonpath "$.cardType" == "White"
-```
+      # Construir imagen de docker
+      - name: Build docker image
+        run: |
+          docker build -t vise-api:latest .
+
+      # Levantar contenedor
+      - name: Run container
+        run: |
+          docker run -d -p ${{ github.event.inputs.PORT }}:${{ github.event.inputs.PORT }} --name vise-api vise-api:latest
+          sleep 5
+
+      # Instalar hurl
+      - name: Setup hurl (herramienta de prueba de API)
+        uses: gacts/install-hurl@v1
+
+      # Ejecutar pruebas de la API
+      - name: API de prueba
+        run: |
+          hurl --variable host=http://localhost:${{ github.event.inputs.PORT }} --error-format long --test session.hurl
