@@ -33,7 +33,7 @@ jobs:
 
       # Instalar hurl
       - name: Setup hurl (herramienta de prueba de API)
-        uses: gacts/install-hurl@v1
+        uses: gacts/install-hurl@v1   
 
       # Ejecutar pruebas de la API
       - name: API de prueba
