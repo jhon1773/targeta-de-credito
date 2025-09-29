@@ -1,4 +1,3 @@
-```hurl
 # Classic - should register without restrictions
 POST {{host}}/client
 {
@@ -78,4 +77,3 @@ white_id: jsonpath "$['clientId']"
 [Asserts]
 jsonpath "$.status" == "Registered"
 jsonpath "$.cardType" == "White"
-```
