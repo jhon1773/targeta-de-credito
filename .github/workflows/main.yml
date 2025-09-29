@@ -1,0 +1,41 @@
+name: compilación del contenedor y ejecución de pruebas de la API de VISE
+
+on:
+  workflow_dispatch:
+    inputs:
+      PORT:
+        description: "El puerto de su aplicación"
+        required: true
+        default: "3000"
+
+jobs:
+  prueba:
+    runs-on: ubuntu-latest
+    steps:
+      # Descargar el código del repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Instalar docker
+      - name: Configurar docker
+        uses: docker/setup-buildx-action@v3
+
+      # Construir imagen de docker
+      - name: Build docker image
+        run: |
+          docker build -t vise-api:latest .
+
+      # Levantar contenedor
+      - name: Run container
+        run: |
+          docker run -d -p ${{ github.event.inputs.PORT }}:${{ github.event.inputs.PORT }} --name vise-api vise-api:latest
+          sleep 5
+
+      # Instalar hurl
+      - name: Setup hurl (herramienta de prueba de API)
+        uses: gacts/install-hurl@v1
+
+      # Ejecutar pruebas de la API
+      - name: API de prueba
+        run: |
+          hurl --variable host=http://localhost:${{ github.event.inputs.PORT }} --error-format long --test session.hurl
