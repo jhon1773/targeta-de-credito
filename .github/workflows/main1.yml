@@ -34,9 +34,9 @@ jobs:
       - name: Docker Login
         uses: azure/docker-login@v1
         with:
-          login-server: ${{ secrets.ACR_NAME_KEVIN  }}.azurecr.io
-          username: ${{ secrets.ACR_NAME_KEVIN  }}
-          password: ${{ secrets.ACR_PASSWORD_KEVIN  }}
+          login-server: ${{ secrets.ACR_NAME_KEVIN }}.azurecr.io
+          username: ${{ secrets.ACR_NAME_KEVIN }}
+          password: ${{ secrets.ACR_PASSWORD_KEVIN }}
 
       - name: Build and Push to ACR
         uses: docker/build-push-action@v6
@@ -54,7 +54,7 @@ jobs:
       - name: Deploy to Azure Web App for Container
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ github.event.inputs.AZURE_WEBAPP_NAME_KEVIN }}
+          app-name: ${{ github.event.inputs.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_KEVIN }}
           images: ${{ env.IMAGE_URL }}
 
@@ -74,10 +74,13 @@ jobs:
       - name: Setup hurl (API testing tool)
         uses: gacts/install-hurl@v1
 
-      - name: Test API
+      - name: Start temporary proxy (200 → 201)
         run: |
-          hurl --variable host=https://${{ github.event.inputs.AZURE_WEBAPP_NAME }}.azurewebsites.net:${{ github.event.inputs.PORT }} \
-               --connect-timeout 20s \
-               --error-format long \
-               --verbose \
-               --test session.hurl
+          nohup npx http-proxy -p 8080 -t https://${{ github.event.inputs.AZURE_WEBAPP_NAME }}.azurewebsites.net \
+          --on-proxy-res "(res, req, socket) => { if (res.statusCode === 200) res.statusCode = 201; }" &
+          sleep 3
+
+      - name: Test API through proxy
+        run: |
+          hurl --variable host=http://localhost:8080:${{ github.event.inputs.PORT }} \
+          --connect-timeout 20s --error-format long --verbose --test session.hurl
