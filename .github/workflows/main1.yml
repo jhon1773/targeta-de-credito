@@ -54,7 +54,7 @@ jobs:
       - name: Deploy to Azure Web App for Container
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ github.event.inputs.AZURE_WEBAPP_NAME }}
+          app-name: ${{ github.event.inputs.AZURE_WEBAPP_NAME_KEVIN }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_KEVIN }}
           images: ${{ env.IMAGE_URL }}
 
