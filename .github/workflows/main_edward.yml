@@ -20,7 +20,7 @@ on:
         required: true
 
 env:
-  IMAGE_URL: ${{ secrets.ACR_NAME }}.azurecr.io/${{ github.event.inputs.IMAGE_REPOSITORY }}:${{ github.event.inputs.IMAGE_TAG }}
+  IMAGE_URL: ${{ secrets.ACR_NAME_JHOAN }}.azurecr.io/${{ github.event.inputs.IMAGE_REPOSITORY }}:${{ github.event.inputs.IMAGE_TAG }}
 
 jobs:
   build-and-push-image:
