@@ -34,7 +34,7 @@ jobs:
       - name: Docker Login
         uses: azure/docker-login@v1
         with:
-          login-server: ${{ secrets.ACR_NAME }}.azurecr.io
+          login-server: ${{ secrets.ACR_NAME_JOHAN }}.azurecr.io
           username: ${{ secrets.ACR_NAME_JOHAN }}
           password: ${{ secrets.ACR_PASSWORD_JOHAN }}
 
@@ -54,8 +54,8 @@ jobs:
       - name: Deploy to Azure Web App for Container
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ github.event.inputs.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_HARRIZON }}
+          app-name: ${{ github.event.inputs.AZURE_WEBAPP_NAME_EDWARD }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_EDWARD }}
           images: ${{ env.IMAGE_URL }}
 
   test-deploy:
