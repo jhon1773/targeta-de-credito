@@ -28,11 +28,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 🔧 Forzar el nombre del ACR a minúsculas
       - name: Normalize ACR name (force lowercase)
         run: echo "ACR_NAME_LOWER=$(echo '${{ secrets.ACR_NAME_GALEANO }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
-      # 🔑 Login a Azure Container Registry (usando el nombre normalizado)
       - name: Docker Login
         uses: azure/docker-login@v1
         with:
@@ -40,7 +38,6 @@ jobs:
           username: ${{ env.ACR_NAME_LOWER }}
           password: ${{ secrets.ACR_PASSWORD_GALEANO }}
 
-      # 🐳 Build y push de la imagen Docker a ACR
       - name: Build and Push to ACR
         uses: docker/build-push-action@v6
         with:
@@ -48,7 +45,6 @@ jobs:
           tags: ${{ env.ACR_NAME_LOWER }}.azurecr.io/${{ github.event.inputs.IMAGE_REPOSITORY }}:${{ github.event.inputs.IMAGE_TAG }}
           file: Dockerfile
 
-  # 🚀 Despliegue en Azure App Service
   deploy:
     name: 'Deploy remote container to Azure'
     runs-on: ubuntu-latest
@@ -62,11 +58,10 @@ jobs:
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_GALEANO }}
           images: ${{ env.ACR_NAME_LOWER }}.azurecr.io/${{ github.event.inputs.IMAGE_REPOSITORY }}:${{ github.event.inputs.IMAGE_TAG }}
 
-  # 🧪 Pruebas posteriores al despliegue
   test-deploy:
     name: 'Test deployed service'
     runs-on: ubuntu-latest
-    needs: [build-and-push-image, deploy]
+    needs: [deploy]
 
     steps:
       - name: Checkout session.hurl
@@ -78,6 +73,11 @@ jobs:
 
       - name: Setup hurl (API testing tool)
         uses: gacts/install-hurl@v1
+
+      - name: Wait for container startup
+        run: |
+          echo "Esperando 40 segundos para que el contenedor se inicie..."
+          sleep 40
 
       - name: Test API
         run: |
