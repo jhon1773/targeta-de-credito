@@ -35,7 +35,7 @@ jobs:
         uses: azure/docker-login@v1
         with:
           login-server: ${{ secrets.ACR_NAME_JHOAN }}.azurecr.io
-          username: ${{ secrets.ACR_NAME_JHOAN }}
+          username: ${{ secrets.ACR_NAME_JOHAN }}
           password: ${{ secrets.ACR_PASSWORD_JOHAN }}
 
       - name: Build and Push to ACR
