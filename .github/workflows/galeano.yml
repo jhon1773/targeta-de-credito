@@ -19,9 +19,6 @@ on:
         required: true
         default: '443'
 
-env:
-  IMAGE_URL: ${{ secrets.ACR_NAME_GALEANO }}.azurecr.io/${{ github.event.inputs.IMAGE_REPOSITORY }}:${{ github.event.inputs.IMAGE_TAG }}
-
 jobs:
   build-and-push-image:
     name: 'Build and Push to ACR'
@@ -31,20 +28,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 🔧 Forzar el nombre del ACR a minúsculas
+      - name: Normalize ACR name (force lowercase)
+        run: echo "ACR_NAME_LOWER=$(echo '${{ secrets.ACR_NAME_GALEANO }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      # 🔑 Login a Azure Container Registry (usando el nombre normalizado)
       - name: Docker Login
         uses: azure/docker-login@v1
         with:
-          login-server: ${{ secrets.ACR_NAME_GALEANO }}.azurecr.io
-          username: ${{ secrets.ACR_NAME_GALEANO }}
+          login-server: ${{ env.ACR_NAME_LOWER }}.azurecr.io
+          username: ${{ env.ACR_NAME_LOWER }}
           password: ${{ secrets.ACR_PASSWORD_GALEANO }}
 
+      # 🐳 Build y push de la imagen Docker a ACR
       - name: Build and Push to ACR
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: ${{ env.IMAGE_URL }}
+          tags: ${{ env.ACR_NAME_LOWER }}.azurecr.io/${{ github.event.inputs.IMAGE_REPOSITORY }}:${{ github.event.inputs.IMAGE_TAG }}
           file: Dockerfile
 
+  # 🚀 Despliegue en Azure App Service
   deploy:
     name: 'Deploy remote container to Azure'
     runs-on: ubuntu-latest
@@ -54,10 +58,11 @@ jobs:
       - name: Deploy to Azure Web App for Container
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ github.event.inputs.AZURE_WEBAPP_NAME_GALEANO }}
+          app-name: ${{ github.event.inputs.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_GALEANO }}
-          images: ${{ env.IMAGE_URL }}
+          images: ${{ env.ACR_NAME_LOWER }}.azurecr.io/${{ github.event.inputs.IMAGE_REPOSITORY }}:${{ github.event.inputs.IMAGE_TAG }}
 
+  # 🧪 Pruebas posteriores al despliegue
   test-deploy:
     name: 'Test deployed service'
     runs-on: ubuntu-latest
