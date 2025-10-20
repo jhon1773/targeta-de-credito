@@ -66,7 +66,7 @@ jsonpath "$.cardType" == "Black"
 POST {{host}}/client
 {
   "name": "Bob Gold",
-  "country": "USA",
+  "country": "USA", 
   "monthlyIncome": 2100,
   "viseClub": true,
   "cardType": "White"
