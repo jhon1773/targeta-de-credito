@@ -1,3 +1,10 @@
+// Initialize OpenTelemetry as early as possible
+try {
+    require('./otel');
+} catch (e) {
+    console.warn('OpenTelemetry initialization failed or not installed:', e.message);
+}
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
