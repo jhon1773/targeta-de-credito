@@ -49,7 +49,7 @@ class CardBenefitsService {
             finalAmount: purchase.originalAmount,
             benefit: null
         };
-
+        
         // Verificar descuento de lunes a miércoles
         if (purchase.isMondayToWednesday() && purchase.originalAmount > 100) {
             const discount = purchase.originalAmount * 0.15;

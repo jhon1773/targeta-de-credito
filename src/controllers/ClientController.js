@@ -1,20 +1,17 @@
 const Client = require('../models/Client');
 
-// Simulamos una base de datos en memoria
+
 let clients = [];
 let nextClientId = 1;
 
 class ClientController {
     
-    /**
-     * Registra un nuevo cliente si es apto para el tipo de tarjeta solicitada
-     * POST /client
-     */
+    
     static registerClient(req, res) {
         try {
             const { name, country, monthlyIncome, viseClub, cardType } = req.body;
 
-            // Validar que todos los campos requeridos estén presentes
+            
             if (!name || !country || monthlyIncome === undefined || viseClub === undefined || !cardType) {
                 return res.status(400).json({
                     status: 'Rejected',
@@ -22,7 +19,7 @@ class ClientController {
                 });
             }
 
-            // Validar tipos de datos básicos
+            
             if (typeof name !== 'string' || name.trim().length < 2) {
                 return res.status(400).json({
                     status: 'Rejected',
@@ -37,7 +34,7 @@ class ClientController {
                 });
             }
 
-            // Validar tipos de datos
+            
             if (typeof monthlyIncome !== 'number' || monthlyIncome < 0) {
                 return res.status(400).json({
                     status: 'Rejected',
@@ -52,7 +49,7 @@ class ClientController {
                 });
             }
 
-            // Validar tipo de tarjeta
+            
             const validCardTypes = ['Classic', 'Gold', 'Platinum', 'Black', 'White'];
             if (!validCardTypes.includes(cardType)) {
                 return res.status(400).json({
@@ -61,10 +58,10 @@ class ClientController {
                 });
             }
 
-            // Crear instancia del cliente
+            
             const client = new Client(name, country, monthlyIncome, viseClub, cardType);
 
-            // Validar elegibilidad para el tipo de tarjeta
+            
             const eligibilityResult = Client.validateCardEligibility(client);
 
             if (!eligibilityResult.isValid) {
@@ -74,12 +71,12 @@ class ClientController {
                 });
             }
 
-            // Cliente apto: registrar
+            
             client.clientId = nextClientId++;
             client.status = 'Registered';
             clients.push(client);
 
-            // Respuesta exitosa
+            
             return res.status(201).json({
                 clientId: client.clientId,
                 name: client.name,
@@ -97,16 +94,12 @@ class ClientController {
         }
     }
 
-    /**
-     * Obtiene un cliente por su ID
-     */
+    
     static getClientById(clientId) {
         return clients.find(client => client.clientId === clientId);
     }
 
-    /**
-     * Obtiene todos los clientes registrados (útil para testing)
-     */
+    
     static getAllClients(req, res) {
         return res.json({
             total: clients.length,
@@ -114,9 +107,7 @@ class ClientController {
         });
     }
 
-    /**
-     * Obtiene un cliente específico por ID
-     */
+    
     static getClient(req, res) {
         try {
             const clientId = parseInt(req.params.id);
