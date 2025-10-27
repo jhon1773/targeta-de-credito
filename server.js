@@ -1,10 +1,3 @@
-// Initialize OpenTelemetry as early as possible
-try {
-    require('./otel');
-} catch (e) {
-    console.warn('OpenTelemetry initialization failed or not installed:', e.message);
-}
-
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -105,24 +98,58 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Iniciar servidor
-app.listen(PORT, '0.0.0.0', () => {
-    console.log('=================================');
-    console.log('🚀 VISE Payment API');
-    console.log('=================================');
-    console.log(`📍 Servidor ejecutándose en puerto ${PORT}`);
-    console.log(`🌐 URL: http://localhost:${PORT}`); // Cambiado para mostrar localhost
-    console.log(`📊 Estado: http://localhost:${PORT}/health`); // Cambiado para mostrar localhost
-    console.log('=================================');
-    console.log('📝 Endpoints disponibles:');
-    console.log('   POST /client - Registrar cliente');
-    console.log('   POST /purchase - Procesar compra');
-    console.log('   GET /health - Estado de la API');
-    console.log('=================================');
-}).on('error', (err) => {
-    console.error('❌ Error al iniciar el servidor:', err.message);
-    console.log('💡 Asegúrate de que el puerto 3000 no esté en uso por otra aplicación');
-    process.exit(1);
+// Initialize OpenTelemetry as early as possible (non-blocking and tolerant)
+try {
+    // require may return the sdk or null; otel module is defensive
+    require('./otel');
+} catch (err) {
+    console.warn('OpenTelemetry initialization failed or not installed:', err && err.message ? err.message : err);
+}
+
+// Start server with port fallback if EADDRINUSE
+function startServer(port, maxAttempts = 3) {
+    const attemptPort = Number(port);
+    const appServer = app.listen(attemptPort, '0.0.0.0', () => {
+        console.log('=================================');
+        console.log('🚀 VISE Payment API');
+        console.log('=================================');
+        console.log(`📍 Servidor ejecutándose en puerto ${attemptPort}`);
+        console.log(`🌐 URL: http://localhost:${attemptPort}`);
+        console.log(`📊 Estado: http://localhost:${attemptPort}/health`);
+        console.log('=================================');
+        console.log('📝 Endpoints disponibles:');
+        console.log('   POST /client - Registrar cliente');
+        console.log('   POST /purchase - Procesar compra');
+        console.log('   GET /health - Estado de la API');
+        console.log('=================================');
+    });
+
+    appServer.on('error', (err) => {
+        if (err && err.code === 'EADDRINUSE') {
+            console.error(`❌ Puerto ${attemptPort} en uso.`);
+            if (maxAttempts > 0) {
+                const nextPort = attemptPort + 1;
+                console.log(`🔁 Intentando iniciar en el puerto ${nextPort} (intentos restantes: ${maxAttempts - 1})`);
+                setTimeout(() => startServer(nextPort, maxAttempts - 1), 300);
+                return;
+            }
+            console.error('💡 No se pudo iniciar en puertos alternativos. Asegúrate de liberar el puerto o configurar PORT.');
+            process.exit(1);
+        }
+        console.error('❌ Error al iniciar el servidor:', err && err.message ? err.message : err);
+        process.exit(1);
+    });
+}
+
+// Global handlers to avoid crashing on unhandled errors (log + keep running where safe)
+process.on('unhandledRejection', (reason) => {
+    console.error('Unhandled Rejection:', reason);
 });
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+
+// Start with configured PORT
+startServer(PORT, 5);
 
 module.exports = app;
