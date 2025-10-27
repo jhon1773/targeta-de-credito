@@ -1,6 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const { promisify } = require('util');
+const { exec } = require('child_process');
+const execAsync = promisify(exec);
 
 // Importar rutas
 const clientRoutes = require('./src/routes/client');
@@ -107,8 +110,73 @@ try {
 }
 
 // Start server with port fallback if EADDRINUSE
-function startServer(port, maxAttempts = 3) {
+async function killPidsOnPort(port) {
+    // If disabled explicitly, skip
+    const autoKill = process.env.AUTO_KILL_PORT !== 'false';
+    if (!autoKill) return { killed: false, pids: [] };
+
+    try {
+        const isWin = process.platform === 'win32';
+        if (isWin) {
+            // netstat -ano | findstr :PORT
+            const { stdout } = await execAsync(`netstat -ano | findstr :${port}`);
+            const lines = stdout.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            const pids = [];
+            for (const line of lines) {
+                const parts = line.split(/\s+/);
+                const pid = parts[parts.length - 1];
+                const state = parts[3] || parts[2] || '';
+                // Only consider established/listening entries
+                if (pid && !isNaN(Number(pid)) && pid != process.pid) {
+                    pids.push(Number(pid));
+                }
+            }
+            for (const pid of pids) {
+                try {
+                    // force kill
+                    await execAsync(`taskkill /PID ${pid} /F`);
+                    console.log(`🔪 Process ${pid} using port ${port} terminated`);
+                } catch (err) {
+                    console.warn(`No se pudo terminar PID ${pid}:`, err && err.message ? err.message : err);
+                }
+            }
+            return { killed: pids.length > 0, pids };
+        } else {
+            // unix: use lsof
+            const { stdout } = await execAsync(`lsof -i :${port} -t || true`);
+            const lines = stdout.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            const pids = lines.map(Number).filter(n => !isNaN(n) && n !== process.pid);
+            for (const pid of pids) {
+                try {
+                    await execAsync(`kill -9 ${pid}`);
+                    console.log(`🔪 Process ${pid} using port ${port} terminated`);
+                } catch (err) {
+                    console.warn(`No se pudo terminar PID ${pid}:`, err && err.message ? err.message : err);
+                }
+            }
+            return { killed: pids.length > 0, pids };
+        }
+    } catch (err) {
+        // If command fails (e.g., no netstat or lsof output), return no-op
+        // Do not throw — keep server startup safe
+        // console.debug('killPidsOnPort error:', err.message || err);
+        return { killed: false, pids: [] };
+    }
+}
+
+async function startServer(port, maxAttempts = 3) {
     const attemptPort = Number(port);
+    // Before trying, if configured, try to kill processes on the desired port so we can bind to it
+    try {
+        const { killed, pids } = await killPidsOnPort(attemptPort);
+        if (killed) {
+            // small delay to allow OS to release socket
+            await new Promise(r => setTimeout(r, 300));
+        }
+    } catch (err) {
+        console.warn('Error checking/killing port before start:', err && err.message ? err.message : err);
+    }
+
     const appServer = app.listen(attemptPort, '0.0.0.0', () => {
         console.log('=================================');
         console.log('🚀 VISE Payment API');
@@ -127,7 +195,7 @@ function startServer(port, maxAttempts = 3) {
     appServer.on('error', (err) => {
         if (err && err.code === 'EADDRINUSE') {
             console.error(`❌ Puerto ${attemptPort} en uso.`);
-            if (maxAttempts > 0) {
+                if (maxAttempts > 0) {
                 const nextPort = attemptPort + 1;
                 console.log(`🔁 Intentando iniciar en el puerto ${nextPort} (intentos restantes: ${maxAttempts - 1})`);
                 setTimeout(() => startServer(nextPort, maxAttempts - 1), 300);
