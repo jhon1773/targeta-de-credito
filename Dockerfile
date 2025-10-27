@@ -1,31 +1,19 @@
-# Imagen base: Node con versión específica y tamaño reducido
-FROM node:18-alpine
+FROM node:14
 
-# Instalar dumb-init para manejo de señales
-RUN apk add --no-cache dumb-init
-
-# Definir el directorio de trabajo dentro del contenedor
+# Set the working directory
 WORKDIR /usr/src/app
 
-# Copiar archivos de dependencias
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Instalar dependencias de forma optimizada para producción
-RUN npm ci --only=production && npm cache clean --force
+# Install dependencies
+RUN npm install
 
-# Copiar todo el código fuente con permisos correctos
-COPY --chown=node:node . .
+# Copy the rest of the application files
+COPY . .
 
-# Cambiar a usuario con permisos limitados
-USER node
-
-# Definir variable de entorno para producción
-ENV NODE_ENV=production
-ENV PORT=3000
-
-# Exponer el puerto en el que corre la app
+# Expose the application port
 EXPOSE 3000
 
-# Usar dumb-init para manejo de señales y ejecutar la aplicación correcta
-ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "server.js"]
+# Command to run the application
+CMD ["npm", "start"]

@@ -1,268 +1,123 @@
-const Purchase = require('../models/Purchase');
-
 class CardBenefitsService {
-    
-    /**
-     * Calcula los beneficios aplicables a una compra según el tipo de tarjeta
-     * @param {Purchase} purchase - Objeto de compra
-     * @param {Object} client - Datos del cliente
-     * @returns {Object} - Resultado con descuentos aplicados
-     */
-    static calculateBenefits(purchase, client) {
-        const cardType = client.cardType;
-        
-        switch (cardType) {
-            case 'Classic':
-                return this.calculateClassicBenefits(purchase, client);
-            case 'Gold':
-                return this.calculateGoldBenefits(purchase, client);
-            case 'Platinum':
-                return this.calculatePlatinumBenefits(purchase, client);
-            case 'Black':
-                return this.calculateBlackBenefits(purchase, client);
-            case 'White':
-                return this.calculateWhiteBenefits(purchase, client);
-            default:
-                return { error: 'Tipo de tarjeta no válido' };
-        }
-    }
-
-    /**
-     * Classic: No tiene beneficios
-     */
-    static calculateClassicBenefits(purchase, client) {
-        return {
-            originalAmount: purchase.originalAmount,
-            discountApplied: 0,
-            finalAmount: purchase.originalAmount,
-            benefit: null
+    constructor() {
+        this.benefits = {
+            Classic: {
+                restrictions: [],
+                benefits: []
+            },
+            Gold: {
+                restrictions: ['Minimum income of $500 USD monthly'],
+                benefits: [
+                    {
+                        day: 'Monday, Tuesday, Wednesday',
+                        discount: '15%',
+                        minPurchase: 100
+                    }
+                ]
+            },
+            Platinum: {
+                restrictions: [
+                    'Minimum income of $1000 USD monthly',
+                    'VISE CLUB subscription required'
+                ],
+                benefits: [
+                    {
+                        day: 'Monday, Tuesday, Wednesday',
+                        discount: '20%',
+                        minPurchase: 100
+                    },
+                    {
+                        day: 'Saturday',
+                        discount: '30%',
+                        minPurchase: 200
+                    },
+                    {
+                        type: 'International',
+                        discount: '5%'
+                    }
+                ]
+            },
+            Black: {
+                restrictions: [
+                    'Minimum income of $2000 USD monthly',
+                    'VISE CLUB subscription required',
+                    'Not available for residents of: China, Vietnam, India, Iran'
+                ],
+                benefits: [
+                    {
+                        day: 'Monday, Tuesday, Wednesday',
+                        discount: '25%',
+                        minPurchase: 100
+                    },
+                    {
+                        day: 'Saturday',
+                        discount: '35%',
+                        minPurchase: 200
+                    },
+                    {
+                        type: 'International',
+                        discount: '5%'
+                    }
+                ]
+            },
+            White: {
+                restrictions: [
+                    'Same as Black'
+                ],
+                benefits: [
+                    {
+                        day: 'Monday to Friday',
+                        discount: '25%',
+                        minPurchase: 100
+                    },
+                    {
+                        day: 'Saturday, Sunday',
+                        discount: '35%',
+                        minPurchase: 200
+                    },
+                    {
+                        type: 'International',
+                        discount: '5%'
+                    }
+                ]
+            }
         };
     }
 
-    /**
-     * Gold: Los lunes, martes y miércoles, las compras mayores a 100 USD poseen un 15% de descuento
-     */
-    static calculateGoldBenefits(purchase, client) {
-        const result = {
-            originalAmount: purchase.originalAmount,
-            discountApplied: 0,
-            finalAmount: purchase.originalAmount,
-            benefit: null
-        };
-        
-        // Verificar descuento de lunes a miércoles
-        if (purchase.isMondayToWednesday() && purchase.originalAmount > 100) {
-            const discount = purchase.originalAmount * 0.15;
-            result.discountApplied = discount;
-            result.finalAmount = purchase.originalAmount - discount;
-            result.benefit = `${purchase.getDayOfWeek().name} - Descuento 15%`;
+    calculateDiscount(cardType, purchaseAmount, purchaseDay, isInternational = false) {
+        const cardBenefits = this.benefits[cardType];
+        let discount = 0;
+
+        if (cardBenefits) {
+            cardBenefits.benefits.forEach(benefit => {
+                if (benefit.day.includes(purchaseDay) && purchaseAmount > benefit.minPurchase) {
+                    discount += this.extractDiscountValue(benefit.discount, purchaseAmount);
+                }
+            });
+
+            if (isInternational) {
+                const internationalBenefit = cardBenefits.benefits.find(b => b.type === 'International');
+                if (internationalBenefit) {
+                    discount += this.extractDiscountValue(internationalBenefit.discount, purchaseAmount);
+                }
+            }
         }
 
-        return result;
+        return discount;
     }
 
-    /**
-     * Platinum: 
-     * - Los lunes, martes y miércoles, las compras mayores a 100 USD poseen un 20% de descuento
-     * - Los sábados, las compras mayores a 200 USD poseen un 30% de descuento
-     * - Las compras realizadas en el exterior poseen un 5% de descuento
-     * NOTA: Los descuentos no se acumulan, se aplica el mejor descuento disponible
-     */
-    static calculatePlatinumBenefits(purchase, client) {
-        const result = {
-            originalAmount: purchase.originalAmount,
-            discountApplied: 0,
-            finalAmount: purchase.originalAmount,
-            benefit: null
-        };
-
-        let bestDiscount = 0;
-        let bestBenefit = null;
-
-        // Descuento de lunes a miércoles (20%)
-        if (purchase.isMondayToWednesday() && purchase.originalAmount > 100) {
-            const weekdayDiscount = purchase.originalAmount * 0.20;
-            if (weekdayDiscount > bestDiscount) {
-                bestDiscount = weekdayDiscount;
-                bestBenefit = `${purchase.getDayOfWeek().name} - Descuento 20%`;
-            }
+    extractDiscountValue(discount, amount) {
+        const percentageMatch = discount.match(/(\d+)%/);
+        if (percentageMatch) {
+            const percentage = parseFloat(percentageMatch[1]) / 100;
+            return amount * percentage;
         }
-        
-        // Descuento de sábado (30%) - prioridad mayor
-        if (purchase.isSaturday() && purchase.originalAmount > 200) {
-            const saturdayDiscount = purchase.originalAmount * 0.30;
-            if (saturdayDiscount > bestDiscount) {
-                bestDiscount = saturdayDiscount;
-                bestBenefit = 'Sábado - Descuento 30%';
-            }
-        }
-
-        // Descuento por compra internacional (5%) - se aplica ADEMÁS del mejor descuento
-        let internationalDiscount = 0;
-        if (purchase.isInternationalPurchase(client.country)) {
-            internationalDiscount = purchase.originalAmount * 0.05;
-        }
-
-        // Aplicar descuentos
-        if (bestDiscount > 0 || internationalDiscount > 0) {
-            result.discountApplied = bestDiscount + internationalDiscount;
-            result.finalAmount = purchase.originalAmount - result.discountApplied;
-            
-            // Construir mensaje de beneficio
-            if (bestBenefit && internationalDiscount > 0) {
-                result.benefit = `${bestBenefit} + Compra internacional - Descuento 5%`;
-            } else if (bestBenefit) {
-                result.benefit = bestBenefit;
-            } else if (internationalDiscount > 0) {
-                result.benefit = 'Compra internacional - Descuento 5%';
-            }
-        }
-
-        return result;
+        return 0;
     }
 
-    /**
-     * Black:
-     * - Los lunes, martes y miércoles, las compras mayores a 100 USD poseen un 25% de descuento
-     * - Los sábados, las compras mayores a 200 USD poseen un 35% de descuento
-     * - Las compras realizadas en el exterior poseen un 5% de descuento
-     * NOTA: Los descuentos no se acumulan, se aplica el mejor descuento disponible
-     */
-    static calculateBlackBenefits(purchase, client) {
-        const result = {
-            originalAmount: purchase.originalAmount,
-            discountApplied: 0,
-            finalAmount: purchase.originalAmount,
-            benefit: null
-        };
-
-        let bestDiscount = 0;
-        let bestBenefit = null;
-
-        // Descuento de lunes a miércoles (25%)
-        if (purchase.isMondayToWednesday() && purchase.originalAmount > 100) {
-            const weekdayDiscount = purchase.originalAmount * 0.25;
-            if (weekdayDiscount > bestDiscount) {
-                bestDiscount = weekdayDiscount;
-                bestBenefit = `${purchase.getDayOfWeek().name} - Descuento 25%`;
-            }
-        }
-        
-        // Descuento de sábado (35%) - prioridad mayor
-        if (purchase.isSaturday() && purchase.originalAmount > 200) {
-            const saturdayDiscount = purchase.originalAmount * 0.35;
-            if (saturdayDiscount > bestDiscount) {
-                bestDiscount = saturdayDiscount;
-                bestBenefit = 'Sábado - Descuento 35%';
-            }
-        }
-
-        // Descuento por compra internacional (5%) - se aplica ADEMÁS del mejor descuento
-        let internationalDiscount = 0;
-        if (purchase.isInternationalPurchase(client.country)) {
-            internationalDiscount = purchase.originalAmount * 0.05;
-        }
-
-        // Aplicar descuentos
-        if (bestDiscount > 0 || internationalDiscount > 0) {
-            result.discountApplied = bestDiscount + internationalDiscount;
-            result.finalAmount = purchase.originalAmount - result.discountApplied;
-            
-            // Construir mensaje de beneficio
-            if (bestBenefit && internationalDiscount > 0) {
-                result.benefit = `${bestBenefit} + Compra internacional - Descuento 5%`;
-            } else if (bestBenefit) {
-                result.benefit = bestBenefit;
-            } else if (internationalDiscount > 0) {
-                result.benefit = 'Compra internacional - Descuento 5%';
-            }
-        }
-
-        return result;
-    }
-
-    /**
-     * White:
-     * - Del lunes a viernes, las compras mayores a 100 USD poseen un 25% de descuento
-     * - Los sábados y domingos, las compras mayores a 200 USD poseen un 35% de descuento
-     * - Las compras realizadas en el exterior poseen un 5% de descuento
-     * NOTA: Los descuentos no se acumulan, se aplica el mejor descuento disponible
-     */
-    static calculateWhiteBenefits(purchase, client) {
-        const result = {
-            originalAmount: purchase.originalAmount,
-            discountApplied: 0,
-            finalAmount: purchase.originalAmount,
-            benefit: null
-        };
-
-        let bestDiscount = 0;
-        let bestBenefit = null;
-
-        // Descuento de lunes a viernes (25%)
-        if (purchase.isWeekday() && purchase.originalAmount > 100) {
-            const weekdayDiscount = purchase.originalAmount * 0.25;
-            if (weekdayDiscount > bestDiscount) {
-                bestDiscount = weekdayDiscount;
-                bestBenefit = `${purchase.getDayOfWeek().name} - Descuento 25%`;
-            }
-        }
-        
-        // Descuento de fin de semana (35%) - prioridad mayor
-        if (purchase.isWeekend() && purchase.originalAmount > 200) {
-            const weekendDiscount = purchase.originalAmount * 0.35;
-            if (weekendDiscount > bestDiscount) {
-                bestDiscount = weekendDiscount;
-                bestBenefit = `${purchase.getDayOfWeek().name} - Descuento 35%`;
-            }
-        }
-
-        // Descuento por compra internacional (5%) - se aplica ADEMÁS del mejor descuento
-        let internationalDiscount = 0;
-        if (purchase.isInternationalPurchase(client.country)) {
-            internationalDiscount = purchase.originalAmount * 0.05;
-        }
-
-        // Aplicar descuentos
-        if (bestDiscount > 0 || internationalDiscount > 0) {
-            result.discountApplied = bestDiscount + internationalDiscount;
-            result.finalAmount = purchase.originalAmount - result.discountApplied;
-            
-            // Construir mensaje de beneficio
-            if (bestBenefit && internationalDiscount > 0) {
-                result.benefit = `${bestBenefit} + Compra internacional - Descuento 5%`;
-            } else if (bestBenefit) {
-                result.benefit = bestBenefit;
-            } else if (internationalDiscount > 0) {
-                result.benefit = 'Compra internacional - Descuento 5%';
-            }
-        }
-
-        return result;
-    }
-
-    /**
-     * Valida si un cliente puede realizar una compra según las restricciones de su tarjeta
-     * @param {Object} client - Datos del cliente
-     * @param {Purchase} purchase - Datos de la compra
-     * @returns {Object} - Resultado de la validación
-     */
-    static validatePurchaseRestrictions(client, purchase) {
-        const cardType = client.cardType;
-        
-        // Para tarjetas Black y White, verificar restricciones de país
-        if (cardType === 'Black' || cardType === 'White') {
-            const restrictedCountries = ['China', 'Vietnam', 'India', 'Irán'];
-            if (restrictedCountries.includes(purchase.purchaseCountry)) {
-                return {
-                    isValid: false,
-                    error: `El cliente con tarjeta ${cardType} no puede realizar compras desde ${purchase.purchaseCountry}`
-                };
-            }
-        }
-
-        return { isValid: true };
+    getRestrictions(cardType) {
+        return this.benefits[cardType]?.restrictions || [];
     }
 }
 
-module.exports = CardBenefitsService;
+module.exports = new CardBenefitsService();

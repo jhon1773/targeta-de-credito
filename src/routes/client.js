@@ -3,13 +3,13 @@ const ClientController = require('../controllers/ClientController');
 
 const router = express.Router();
 
-// POST /client - Registrar un nuevo cliente
+// Registrar Cliente
 router.post('/', ClientController.registerClient);
 
-// GET /client - Obtener todos los clientes (útil para testing)
+// Obtener todos los clientes
 router.get('/', ClientController.getAllClients);
 
-// GET /client/:id - Obtener un cliente específico por ID
-router.get('/:id', ClientController.getClient);
+// Obtener cliente por ID
+router.get('/:id', ClientController.getClientById);
 
 module.exports = router;

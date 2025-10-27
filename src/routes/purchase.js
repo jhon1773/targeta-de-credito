@@ -3,13 +3,13 @@ const PurchaseController = require('../controllers/PurchaseController');
 
 const router = express.Router();
 
-// POST /purchase - Procesar una nueva compra
+// Route to process a purchase
 router.post('/', PurchaseController.processPurchase);
 
-// GET /purchase - Obtener todas las compras (útil para testing)
+// Route to get all purchases
 router.get('/', PurchaseController.getAllPurchases);
 
-// GET /purchase/client/:clientId - Obtener compras de un cliente específico
-router.get('/client/:clientId', PurchaseController.getClientPurchases);
+// Route to get purchases by client ID
+router.get('/client/:clientId', PurchaseController.getPurchasesByClientId);
 
 module.exports = router;
