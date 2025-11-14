@@ -42,6 +42,8 @@
  *         description: Cliente no encontrado
  */
 
+const telemetry = require('../services/AxiomTelemetry');
+
 class PurchaseController {
   constructor(purchaseService) {
     this.purchaseService = purchaseService;
@@ -51,8 +53,43 @@ class PurchaseController {
     try {
       const purchaseData = req.body;
       const result = await this.purchaseService.processPurchase(purchaseData);
+
+      // Log detailed business event for purchase
+      telemetry.logBusinessEvent({
+        requestId: req.requestId,
+        eventName: 'purchase_processed',
+        eventType: 'purchase',
+        details: {
+          purchaseId: result.metadata?.id,
+          clientId: purchaseData.clientId,
+          amount: purchaseData.amount,
+          discount: result.discount,
+          finalAmount: result.finalAmount,
+          cardType: result.metadata?.cardType,
+          dayOfWeek: result.metadata?.day,
+          isInternational: result.metadata?.isInternational,
+          status: result.status,
+          discountPercentage: result.discount ? ((result.discount / purchaseData.amount) * 100).toFixed(2) : 0
+        }
+      });
+
       res.status(200).json(result);
     } catch (error) {
+      // Log error event with purchase context
+      telemetry.logError({
+        requestId: req.requestId,
+        message: error.message,
+        stack: error.stack,
+        statusCode: 400,
+        method: req.method,
+        url: req.originalUrl,
+        path: req.path,
+        errorType: 'PurchaseProcessingError',
+        metadata: {
+          purchaseData: req.body
+        }
+      });
+
       res.status(400).json({ status: "Rejected", error: error.message });
     }
   }

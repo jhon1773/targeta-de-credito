@@ -1,3 +1,5 @@
+const telemetry = require('../services/AxiomTelemetry');
+
 class ClientController {
   constructor(clientService) {
     this.clientService = clientService;
@@ -40,8 +42,39 @@ class ClientController {
     try {
       const clientData = req.body;
       const result = await this.clientService.register(clientData);
+
+      // Log business event
+      telemetry.logBusinessEvent({
+        requestId: req.requestId,
+        eventName: 'client_registered',
+        eventType: 'client',
+        details: {
+          clientId: result.id,
+          country: clientData.country,
+          monthlyIncome: clientData.monthlyIncome,
+          viseClub: clientData.viseClub,
+          cardType: result.cardType,
+          status: result.status
+        }
+      });
+
       res.status(201).json(result);
     } catch (error) {
+      // Log error event
+      telemetry.logError({
+        requestId: req.requestId,
+        message: error.message,
+        stack: error.stack,
+        statusCode: 400,
+        method: req.method,
+        url: req.originalUrl,
+        path: req.path,
+        errorType: 'ClientRegistrationError',
+        metadata: {
+          clientData: req.body
+        }
+      });
+
       res.status(400).json({ status: "Rejected", error: error.message });
     }
   }
