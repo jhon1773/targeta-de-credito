@@ -1,18 +1,40 @@
-# VISE Payment API
+# 🚀 VISE Payment API
 
-API REST para el procesamiento de pagos con diferentes tipos de tarjetas VISE.
+API REST para el registro de clientes y procesamiento de compras con tarjetas VISE (Classic, Gold, Platinum, Black y White), aplicando automáticamente sus restricciones y beneficios.
+
+## 📑 Tabla de Contenidos
+
+- [Descripción](#descripción)
+- [Instalación y Ejecución](#instalación-y-ejecución)
+- [Endpoints](#endpoints)
+- [Tipos de Tarjeta](#tipos-de-tarjeta)
+- [Ejemplos de Prueba](#ejemplos-de-prueba)
+- [Estructura del Proyecto](#estructura-del-proyecto)
+- [Tecnologías Utilizadas](#tecnologías-utilizadas)
+- [Notas de Implementación](#notas-de-implementación)
+- [Casos de Prueba Sugeridos](#casos-de-prueba-sugeridos)
+- [Códigos de Estado HTTP](#códigos-de-estado-http)
 
 ## 📋 Descripción
 
-Esta API permite registrar clientes y procesar compras aplicando las restricciones y beneficios específicos de cada tipo de tarjeta VISE (Classic, Gold, Platinum, Black, White).
+La VISE Payment API permite:
+
+- ✓ Registrar clientes según su tipo de tarjeta
+- ✓ Validar restricciones de tarjetas
+- ✓ Procesar compras aplicando descuentos automáticos
+- ✓ Registrar operaciones según fecha, país y monto
+- ✓ Consultar clientes y compras
+
+Todos los datos se almacenan en memoria, por lo que la API funciona como prototipo o prueba técnica.
 
 ## 🚀 Instalación y Ejecución
 
 ### Prerrequisitos
-- Node.js (versión 14 o superior)
+- Node.js 14+
 - npm
 
 ### Instalación
+
 ```bash
 # Instalar dependencias
 npm install
@@ -20,7 +42,7 @@ npm install
 # Ejecutar en modo desarrollo
 npm run dev
 
-# Ejecutar en modo producción
+# Ejecutar en producción
 npm start
 ```
 
@@ -31,9 +53,9 @@ El servidor estará disponible en `http://localhost:3000`
 ### 1. Registrar Cliente
 **POST** `/client`
 
-Registra un cliente si es apto para el tipo de tarjeta solicitada.
+Registra un cliente si cumple con las restricciones de la tarjeta.
 
-#### Request Body:
+**Request Body:**
 ```json
 {
   "name": "John Doe",
@@ -44,7 +66,7 @@ Registra un cliente si es apto para el tipo de tarjeta solicitada.
 }
 ```
 
-#### Response (Éxito):
+**Respuesta (Éxito):**
 ```json
 {
   "clientId": 1,
@@ -55,7 +77,7 @@ Registra un cliente si es apto para el tipo de tarjeta solicitada.
 }
 ```
 
-#### Response (Error):
+**Respuesta (Error):**
 ```json
 {
   "status": "Rejected",
@@ -68,7 +90,7 @@ Registra un cliente si es apto para el tipo de tarjeta solicitada.
 
 Procesa una compra aplicando las restricciones y beneficios de la tarjeta.
 
-#### Request Body:
+**Request Body:**
 ```json
 {
   "clientId": 1,
@@ -79,7 +101,7 @@ Procesa una compra aplicando las restricciones y beneficios de la tarjeta.
 }
 ```
 
-#### Response (Aprobada):
+**Respuesta (Aprobada):**
 ```json
 {
   "status": "Approved",
@@ -93,7 +115,7 @@ Procesa una compra aplicando las restricciones y beneficios de la tarjeta.
 }
 ```
 
-#### Response (Rechazada):
+**Respuesta (Rechazada):**
 ```json
 {
   "status": "Rejected",
@@ -103,11 +125,13 @@ Procesa una compra aplicando las restricciones y beneficios de la tarjeta.
 
 ### 3. Endpoints Adicionales
 
-- **GET** `/health` - Estado de la API
-- **GET** `/client` - Obtener todos los clientes
-- **GET** `/client/:id` - Obtener cliente por ID
-- **GET** `/purchase` - Obtener todas las compras
-- **GET** `/purchase/client/:clientId` - Obtener compras de un cliente
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/health` | Estado de la API |
+| GET | `/client` | Lista de clientes |
+| GET | `/client/:id` | Cliente por ID |
+| GET | `/purchase` | Lista de compras |
+| GET | `/purchase/client/:clientId` | Compras por cliente |
 
 ## 💳 Tipos de Tarjeta
 
@@ -118,14 +142,14 @@ Procesa una compra aplicando las restricciones y beneficios de la tarjeta.
 ### Gold
 - **Restricciones:** Ingreso mínimo de $500 USD mensuales
 - **Beneficios:** 
-  - Lunes, martes y miércoles: 15% de descuento en compras > $100 USD
+  - Lunes–Miércoles: 15% de descuento en compras > $100 USD
 
 ### Platinum
 - **Restricciones:** 
   - Ingreso mínimo de $1000 USD mensuales
   - Suscripción VISE CLUB requerida
 - **Beneficios:**
-  - Lunes, martes y miércoles: 20% de descuento en compras > $100 USD
+  - Lunes–Miércoles: 20% de descuento en compras > $100 USD
   - Sábados: 30% de descuento en compras > $200 USD
   - Compras internacionales: 5% de descuento
 
@@ -135,14 +159,14 @@ Procesa una compra aplicando las restricciones y beneficios de la tarjeta.
   - Suscripción VISE CLUB requerida
   - No disponible para residentes de: China, Vietnam, India, Irán
 - **Beneficios:**
-  - Lunes, martes y miércoles: 25% de descuento en compras > $100 USD
+  - Lunes–Miércoles: 25% de descuento en compras > $100 USD
   - Sábados: 35% de descuento en compras > $200 USD
   - Compras internacionales: 5% de descuento
 
 ### White
 - **Restricciones:** Mismas que Black
 - **Beneficios:**
-  - Lunes a viernes: 25% de descuento en compras > $100 USD
+  - Lunes–Viernes: 25% de descuento en compras > $100 USD
   - Sábados y domingos: 35% de descuento en compras > $200 USD
   - Compras internacionales: 5% de descuento
 
@@ -209,21 +233,21 @@ vise-payment-api/
 
 ## 📝 Notas de Implementación
 
-1. Los datos se almacenan en memoria (no persistentes)
-2. Los IDs se generan de forma incremental
-3. Los descuentos se pueden acumular cuando aplican múltiples beneficios
-4. Las fechas deben estar en formato ISO 8601
-5. Los montos se redondean a 2 decimales
+- Los datos se almacenan en memoria (no persistentes)
+- Los IDs se generan de forma incremental
+- Los descuentos se pueden acumular cuando aplican múltiples beneficios
+- Las fechas deben estar en formato ISO 8601
+- Los montos se redondean a 2 decimales
 
 ## 🎯 Casos de Prueba Sugeridos
 
-### Casos de éxito:
+### ✔ Casos de Éxito
 1. Registrar cliente Classic (sin restricciones)
 2. Registrar cliente Gold con ingreso suficiente
 3. Compra con descuento de día de semana
 4. Compra internacional con descuento adicional
 
-### Casos de error:
+### ❌ Casos de Error
 1. Cliente Gold con ingreso insuficiente
 2. Cliente Platinum sin VISE CLUB
 3. Cliente Black desde país restringido
@@ -231,8 +255,10 @@ vise-payment-api/
 
 ## 🚨 Códigos de Estado HTTP
 
-- `200` - Compra procesada exitosamente
-- `201` - Cliente registrado exitosamente
-- `400` - Error en los datos de entrada o restricciones no cumplidas
-- `404` - Cliente no encontrado
-- `500` - Error interno del servidor
+| Código | Descripción |
+|--------|-------------|
+| 200 | Compra procesada exitosamente |
+| 201 | Cliente registrado exitosamente |
+| 400 | Error en datos de entrada o restricciones no cumplidas |
+| 404 | Cliente no encontrado |
+| 500 | Error interno del servidor |
