@@ -3,7 +3,40 @@ class ClientController {
     this.clientService = clientService;
   }
 
-  async registerClient(req, res) {
+  /**
+   * @swagger
+   * /clients:
+   *   post:
+   *     summary: Registrar un nuevo cliente
+   *     tags:
+   *       - Clients
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               nombre:
+   *                 type: string
+   *               email:
+   *                 type: string
+   *               telefono:
+   *                 type: string
+   *             required:
+   *               - nombre
+   *               - email
+   *     responses:
+   *       201:
+   *         description: Cliente registrado exitosamente
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *       400:
+   *         description: Datos inválidos
+   */
+  async registerClient(req, res, next) {
     try {
       const clientData = req.body;
       const result = await this.clientService.register(clientData);
@@ -13,7 +46,26 @@ class ClientController {
     }
   }
 
-  async getAllClients(req, res) {
+  /**
+   * @swagger
+   * /clients:
+   *   get:
+   *     summary: Obtener todos los clientes
+   *     tags:
+   *       - Clients
+   *     responses:
+   *       200:
+   *         description: Lista de clientes
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 type: object
+   *       500:
+   *         description: Error al recuperar los clientes
+   */
+  async getAllClients(req, res, next) {
     try {
       const clients = await this.clientService.getAll();
       res.status(200).json(clients);
@@ -22,7 +74,33 @@ class ClientController {
     }
   }
 
-  async getClientById(req, res) {
+  /**
+   * @swagger
+   * /clients/{id}:
+   *   get:
+   *     summary: Obtener cliente por ID
+   *     tags:
+   *       - Clients
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: ID del cliente
+   *     responses:
+   *       200:
+   *         description: Cliente encontrado
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *       404:
+   *         description: Cliente no encontrado
+   *       500:
+   *         description: Error al recuperar el cliente
+   */
+  async getClientById(req, res, next) {
     try {
       const clientId = req.params.id;
       const client = await this.clientService.getById(clientId);
@@ -41,4 +119,14 @@ class ClientController {
 const clientService = require("../services/ClientService");
 const clientControllerInstance = new ClientController(clientService);
 
-module.exports = clientControllerInstance;
+module.exports = {
+  registerClient: clientControllerInstance.registerClient.bind(
+    clientControllerInstance
+  ),
+  getAllClients: clientControllerInstance.getAllClients.bind(
+    clientControllerInstance
+  ),
+  getClientById: clientControllerInstance.getClientById.bind(
+    clientControllerInstance
+  ),
+};

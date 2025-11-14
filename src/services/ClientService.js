@@ -1,9 +1,9 @@
-const Client = require("../models/Client");
+const Client = require("../models/Clients");
 
 // Simple in-memory client store for demo / local development
 class ClientService {
   constructor() {
-    this.clients = [];
+    this.clients = []; // Sin datos quemados
     this.nextId = 1;
   }
 
