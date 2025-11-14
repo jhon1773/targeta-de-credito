@@ -27,6 +27,8 @@ Response:
 2. SEGUNDO: Verificar que el cliente se registró con GET /client
 3. TERCERO: Procesar compras con POST /purchase
 4. CUARTO: Ver compras del cliente con GET /purchase/client/:id
+5. QUINTO: Actualizar cliente con PUT /client/:id (NUEVO)
+6. SEXTO: Eliminar cliente con DELETE /client/:id (NUEVO)
 
 ========================================
 �👤 CLIENTES (CLIENT ROUTES) - CORREGIDO
@@ -91,11 +93,50 @@ Headers: Content-Type: application/json
 GET http://localhost:3000/client/1
 Headers: Content-Type: application/json
 
+## 5. ACTUALIZAR CLIENTE
+PUT http://localhost:3000/client/1
+Headers: Content-Type: application/json
+
+Body (JSON):
+{
+    "name": "Juan Pérez Actualizado",
+    "country": "Colombia",
+    "monthlyIncome": 3000,
+    "viseClub": true,
+    "cardType": "Black"
+}
+
+### Ejemplo: Cambiar de Classic a Gold
+PUT http://localhost:3000/client/2
+{
+    "name": "María García",
+    "country": "México",
+    "monthlyIncome": 1200,
+    "viseClub": true,
+    "cardType": "Gold"
+}
+
+### Ejemplo: Actualizar solo ingresos
+PUT http://localhost:3000/client/3
+{
+    "name": "Carlos Rodríguez",
+    "country": "Argentina",
+    "monthlyIncome": 2000,
+    "viseClub": true,
+    "cardType": "Platinum"
+}
+
+## 6. ELIMINAR CLIENTE
+DELETE http://localhost:3000/client/1
+Headers: Content-Type: application/json
+
+⚠️ NOTA: Al eliminar un cliente, también se eliminan todas sus compras asociadas.
+
 ========================================
 💳 COMPRAS (PURCHASE ROUTES)
 ========================================
 
-## 5. PROCESAR COMPRA
+## 7. PROCESAR COMPRA
 POST http://localhost:3000/purchase
 Headers: Content-Type: application/json
 
@@ -143,31 +184,61 @@ Otros ejemplos de compras:
     "purchaseCountry": "Japan"
 }
 
-## 6. OBTENER TODAS LAS COMPRAS
+## 8. OBTENER TODAS LAS COMPRAS
 GET http://localhost:3000/purchase
 Headers: Content-Type: application/json
 
-## 7. OBTENER COMPRAS POR CLIENTE (CORREGIDO)
+## 9. OBTENER COMPRAS POR CLIENTE (CORREGIDO)
 GET http://localhost:3000/purchase/client/1
 Headers: Content-Type: application/json
 
-⚠️ NOTA: La URL era /purchase//client/1 (doble barra) - YA CORREGIDO
+## 10. OBTENER COMPRA POR ID
+GET http://localhost:3000/purchase/1
+Headers: Content-Type: application/json
 
-========================================
-✅ CORRECCIONES APLICADAS
-========================================
+## 11. ACTUALIZAR COMPRA
+PUT http://localhost:3000/purchase/1
+Headers: Content-Type: application/json
 
-1. ✅ Corregida la ruta /purchase/client/:id (quitada la doble barra //)
-2. ✅ Agregadas validaciones de elegibilidad para tarjetas
-3. ✅ Corregidos errores de undefined en el cálculo de beneficios
-4. ✅ Arreglado el manejo de países y días de la semana
-5. ✅ Eliminadas rutas duplicadas en PurchaseRoutes.js
+Body (JSON):
+{
+    "amount": 300,
+    "currency": "EUR",
+    "purchaseDate": "2025-11-15T10:00:00Z",
+    "purchaseCountry": "Germany"
+}
+
+### Ejemplo: Corregir moneda de compra
+PUT http://localhost:3000/purchase/2
+{
+    "amount": 150,
+    "currency": "COP",
+    "purchaseDate": "2025-11-14T14:30:00Z",
+    "purchaseCountry": "Colombia"
+}
+
+### Ejemplo: Cambiar país de compra
+PUT http://localhost:3000/purchase/3
+{
+    "amount": 500,
+    "currency": "USD",
+    "purchaseDate": "2025-11-16T15:30:00Z",
+    "purchaseCountry": "Canada"
+}
+
+## 12. ELIMINAR COMPRA
+DELETE http://localhost:3000/purchase/1
+Headers: Content-Type: application/json
+
+## 13. ELIMINAR TODAS LAS COMPRAS DE UN CLIENTE
+DELETE http://localhost:3000/purchase/client/1
+Headers: Content-Type: application/json
 
 ========================================
 🏠 RUTA PRINCIPAL
 ========================================
 
-## 8. INFORMACIÓN DE LA API
+## 14. INFORMACIÓN DE LA API
 GET http://localhost:3000/
 Headers: Content-Type: application/json
 
@@ -179,9 +250,15 @@ Response:
         "POST /client": "Registrar un nuevo cliente",
         "GET /client": "Obtener todos los clientes",
         "GET /client/:id": "Obtener un cliente por ID",
+        "PUT /client/:id": "Actualizar un cliente",
+        "DELETE /client/:id": "Eliminar un cliente",
         "POST /purchase": "Procesar una compra",
         "GET /purchase": "Obtener todas las compras",
+        "GET /purchase/:id": "Obtener una compra por ID",
         "GET /purchase/client/:clientId": "Obtener compras de un cliente",
+        "PUT /purchase/:id": "Actualizar una compra",
+        "DELETE /purchase/:id": "Eliminar una compra",
+        "DELETE /purchase/client/:clientId": "Eliminar todas las compras de un cliente",
         "GET /health": "Estado de la API"
     }
 }
@@ -253,6 +330,41 @@ POST http://localhost:3000/purchase
     "purchaseCountry": "China"
 }
 
+## Actualizar cliente que no existe
+PUT http://localhost:3000/client/999
+{
+    "name": "No Existe",
+    "country": "USA",
+    "monthlyIncome": 3000,
+    "viseClub": true,
+    "cardType": "Gold"
+}
+
+## Eliminar cliente que no existe
+DELETE http://localhost:3000/client/999
+
+## Actualizar compra que no existe
+PUT http://localhost:3000/purchase/999
+{
+    "amount": 300,
+    "currency": "USD",
+    "purchaseDate": "2025-11-15T10:00:00Z",
+    "purchaseCountry": "USA"
+}
+
+## Eliminar compra que no existe
+DELETE http://localhost:3000/purchase/999
+
+## Actualizar cliente con datos inválidos (ingresos insuficientes)
+PUT http://localhost:3000/client/1
+{
+    "name": "Juan Pérez",
+    "country": "Colombia",
+    "monthlyIncome": 500,
+    "viseClub": false,
+    "cardType": "Black"
+}
+
 ========================================
 📊 RESPUESTAS ESPERADAS
 ========================================
@@ -278,14 +390,82 @@ POST http://localhost:3000/purchase
     }
 }
 
-❌ Cliente Rechazado:
+✅ Cliente Actualizado Exitosamente:
 {
-    "status": "Rejected",
-    "error": "El cliente no cumple con la suscripción VISE CLUB requerida para Platinum"
+    "status": "Updated",
+    "clientId": 1,
+    "message": "Cliente actualizado correctamente",
+    "changes": {
+        "cardType": "Black",
+        "monthlyIncome": 3000
+    }
 }
 
-❌ Compra Rechazada:
+✅ Cliente Eliminado:
+{
+    "status": "Deleted",
+    "clientId": 1,
+    "message": "Cliente eliminado correctamente",
+    "purchasesDeleted": 5
+}
+
+✅ Compra Actualizada:
+{
+    "status": "Updated",
+    "purchaseId": 1,
+    "message": "Compra actualizada correctamente",
+    "newBenefit": "Compra Nacional - Sin descuento especial",
+    "finalAmount": 300
+}
+
+✅ Compra Eliminada:
+{
+    "status": "Deleted",
+    "purchaseId": 1,
+    "message": "Compra eliminada correctamente"
+}
+
+❌ Error - Cliente no encontrado:
+{
+    "status": "Error",
+    "error": "Cliente no encontrado",
+    "clientId": 999
+}
+
+❌ Error - No apto para actualización:
 {
     "status": "Rejected",
-    "error": "El cliente con tarjeta Black no puede realizar compras desde China"
+    "error": "El cliente no cumple con los requisitos para tarjeta Black",
+    "requirements": {
+        "monthlyIncome": "Mínimo $4000",
+        "viseClub": "Requerido"
+    }
 }
+
+========================================
+🔧 FLUJOS DE PRUEBA RECOMENDADOS
+========================================
+
+### Flujo Completo CRUD - Clientes:
+1. POST /client (crear)
+2. GET /client/:id (leer)
+3. PUT /client/:id (actualizar)
+4. GET /client/:id (verificar cambios)
+5. DELETE /client/:id (eliminar)
+6. GET /client/:id (verificar eliminación)
+
+### Flujo Completo CRUD - Compras:
+1. POST /client (crear cliente primero)
+2. POST /purchase (crear compra)
+3. GET /purchase/:id (leer compra)
+4. PUT /purchase/:id (actualizar)
+5. GET /purchase/:id (verificar cambios)
+6. DELETE /purchase/:id (eliminar)
+7. GET /purchase/:id (verificar eliminación)
+
+### Flujo de Actualización de Tarjeta:
+1. POST /client (Classic)
+2. PUT /client/:id (Gold)
+3. PUT /client/:id (Platinum)
+4. PUT /client/:id (Black)
+5. PUT /client/:id (White)
