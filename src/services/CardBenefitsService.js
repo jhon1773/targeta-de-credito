@@ -94,6 +94,8 @@ class CardBenefitsService {
     if (cardBenefits) {
       cardBenefits.benefits.forEach((benefit) => {
         if (
+          benefit.day && 
+          purchaseDay && 
           benefit.day.includes(purchaseDay) &&
           purchaseAmount > benefit.minPurchase
         ) {

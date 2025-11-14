@@ -1,0 +1,291 @@
+# GUÍA DE POSTMAN - VISE Payment API
+# Servidor: http://localhost:3000
+
+========================================
+📋 ENDPOINTS DISPONIBLES
+========================================
+
+## 1. HEALTH CHECK
+GET http://localhost:3000/health
+Headers: Content-Type: application/json
+
+Response:
+{
+    "status": "OK",
+    "timestamp": "2025-11-14T00:30:00.000Z",
+    "service": "VISE Payment API",
+    "version": "1.0.0"
+}
+
+========================================
+� PASOS CORRECTOS PARA USAR LA API
+========================================
+
+⚠️ IMPORTANTE: Seguir este orden exacto:
+
+1. PRIMERO: Registrar un cliente con POST /client
+2. SEGUNDO: Verificar que el cliente se registró con GET /client
+3. TERCERO: Procesar compras con POST /purchase
+4. CUARTO: Ver compras del cliente con GET /purchase/client/:id
+
+========================================
+�👤 CLIENTES (CLIENT ROUTES) - CORREGIDO
+========================================
+
+## 2. REGISTRAR CLIENTE (HACER PRIMERO)
+POST http://localhost:3000/client
+Headers: Content-Type: application/json
+
+Body (JSON):
+{
+    "name": "Juan Pérez",
+    "country": "Colombia",
+    "monthlyIncome": 2500,
+    "viseClub": true,
+    "cardType": "Platinum"
+}
+
+Otros ejemplos de clientes:
+
+### Cliente Classic
+{
+    "name": "María García",
+    "country": "México",
+    "monthlyIncome": 800,
+    "viseClub": false,
+    "cardType": "Classic"
+}
+
+### Cliente Gold
+{
+    "name": "Carlos Rodríguez",
+    "country": "Argentina",
+    "monthlyIncome": 1500,
+    "viseClub": true,
+    "cardType": "Gold"
+}
+
+### Cliente Black
+{
+    "name": "Ana Silva",
+    "country": "Brasil",
+    "monthlyIncome": 5000,
+    "viseClub": true,
+    "cardType": "Black"
+}
+
+### Cliente White
+{
+    "name": "Luis Martinez",
+    "country": "España",
+    "monthlyIncome": 8000,
+    "viseClub": true,
+    "cardType": "White"
+}
+
+## 3. OBTENER TODOS LOS CLIENTES
+GET http://localhost:3000/client
+Headers: Content-Type: application/json
+
+## 4. OBTENER CLIENTE POR ID
+GET http://localhost:3000/client/1
+Headers: Content-Type: application/json
+
+========================================
+💳 COMPRAS (PURCHASE ROUTES)
+========================================
+
+## 5. PROCESAR COMPRA
+POST http://localhost:3000/purchase
+Headers: Content-Type: application/json
+
+Body (JSON):
+{
+    "clientId": 1,
+    "amount": 250,
+    "currency": "USD",
+    "purchaseDate": "2025-11-14T14:30:00Z",
+    "purchaseCountry": "France"
+}
+
+NOTA IMPORTANTE: 
+- El clientId debe existir (registrar cliente primero)
+- No necesitas enviar cardType, se obtiene automáticamente del cliente
+- purchaseCountry determina si es compra internacional
+- purchaseDate se usa para calcular descuentos por día de la semana
+
+Otros ejemplos de compras:
+
+### Compra Nacional
+{
+    "clientId": 1,
+    "amount": 150,
+    "currency": "USD",
+    "purchaseDate": "2025-11-16T10:00:00Z",
+    "purchaseCountry": "Colombia"
+}
+
+### Compra de Sábado (para descuento)
+{
+    "clientId": 2,
+    "amount": 300,
+    "currency": "EUR",
+    "purchaseDate": "2025-11-16T15:30:00Z",
+    "purchaseCountry": "Spain"
+}
+
+### Compra Internacional Grande
+{
+    "clientId": 3,
+    "amount": 1200,
+    "currency": "USD",
+    "purchaseDate": "2025-11-14T09:15:00Z",
+    "purchaseCountry": "Japan"
+}
+
+## 6. OBTENER TODAS LAS COMPRAS
+GET http://localhost:3000/purchase
+Headers: Content-Type: application/json
+
+## 7. OBTENER COMPRAS POR CLIENTE (CORREGIDO)
+GET http://localhost:3000/purchase/client/1
+Headers: Content-Type: application/json
+
+⚠️ NOTA: La URL era /purchase//client/1 (doble barra) - YA CORREGIDO
+
+========================================
+✅ CORRECCIONES APLICADAS
+========================================
+
+1. ✅ Corregida la ruta /purchase/client/:id (quitada la doble barra //)
+2. ✅ Agregadas validaciones de elegibilidad para tarjetas
+3. ✅ Corregidos errores de undefined en el cálculo de beneficios
+4. ✅ Arreglado el manejo de países y días de la semana
+5. ✅ Eliminadas rutas duplicadas en PurchaseRoutes.js
+
+========================================
+🏠 RUTA PRINCIPAL
+========================================
+
+## 8. INFORMACIÓN DE LA API
+GET http://localhost:3000/
+Headers: Content-Type: application/json
+
+Response:
+{
+    "message": "Bienvenido a la API de Pagos VISE",
+    "version": "1.0.0",
+    "endpoints": {
+        "POST /client": "Registrar un nuevo cliente",
+        "GET /client": "Obtener todos los clientes",
+        "GET /client/:id": "Obtener un cliente por ID",
+        "POST /purchase": "Procesar una compra",
+        "GET /purchase": "Obtener todas las compras",
+        "GET /purchase/client/:clientId": "Obtener compras de un cliente",
+        "GET /health": "Estado de la API"
+    }
+}
+
+========================================
+📝 TIPOS DE TARJETAS DISPONIBLES
+========================================
+
+1. Classic - Ingreso mínimo: $300
+2. Gold - Ingreso mínimo: $1000 + VISE Club
+3. Platinum - Ingreso mínimo: $2000 + VISE Club
+4. Black - Ingreso mínimo: $4000 + VISE Club
+5. White - Ingreso mínimo: $7000 + VISE Club
+
+========================================
+🎯 BENEFICIOS POR TARJETA
+========================================
+
+Classic: Sin restricciones especiales
+Gold: Descuento 10% compras internacionales
+Platinum: Descuento 30% los sábados
+Black: No puede comprar desde China, descuento 5% todas las compras
+White: Descuento 15% compras > $1000
+
+========================================
+🔧 CONFIGURACIÓN DE POSTMAN
+========================================
+
+1. Crear nueva Collection: "VISE Payment API"
+2. Configurar variables:
+   - baseUrl: http://localhost:3000
+   - contentType: application/json
+
+3. Headers globales:
+   - Content-Type: application/json
+   - Accept: application/json
+
+========================================
+❌ CASOS DE ERROR PARA PROBAR
+========================================
+
+## Cliente NO APTO para Platinum (sin VISE Club)
+POST http://localhost:3000/client
+{
+    "name": "Test User",
+    "country": "USA",
+    "monthlyIncome": 3000,
+    "viseClub": false,
+    "cardType": "Platinum"
+}
+
+## Cliente NO APTO por ingresos bajos
+POST http://localhost:3000/client
+{
+    "name": "Test User 2",
+    "country": "USA",
+    "monthlyIncome": 200,
+    "viseClub": false,
+    "cardType": "Classic"
+}
+
+## Compra desde China con tarjeta Black (RECHAZADA)
+POST http://localhost:3000/purchase
+{
+    "clientId": 4,
+    "amount": 500,
+    "currency": "USD",
+    "purchaseDate": "2025-11-14T14:30:00Z",
+    "purchaseCountry": "China"
+}
+
+========================================
+📊 RESPUESTAS ESPERADAS
+========================================
+
+✅ Cliente Registrado Exitosamente:
+{
+    "clientId": 1,
+    "name": "Juan Pérez",
+    "cardType": "Platinum",
+    "status": "Registered",
+    "message": "Cliente apto para tarjeta Platinum"
+}
+
+✅ Compra Aprobada:
+{
+    "status": "Approved",
+    "purchase": {
+        "clientId": 1,
+        "originalAmount": 250,
+        "discountApplied": 75,
+        "finalAmount": 175,
+        "benefit": "Sábado - Descuento 30%"
+    }
+}
+
+❌ Cliente Rechazado:
+{
+    "status": "Rejected",
+    "error": "El cliente no cumple con la suscripción VISE CLUB requerida para Platinum"
+}
+
+❌ Compra Rechazada:
+{
+    "status": "Rejected",
+    "error": "El cliente con tarjeta Black no puede realizar compras desde China"
+}

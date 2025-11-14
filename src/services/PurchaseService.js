@@ -1,5 +1,6 @@
 const Purchase = require("../models/Purchase");
 const CardBenefitsService = require("./CardBenefitsService");
+const ClientService = require("./ClientService");
 
 // Very small in-memory purchase service used by the controller
 class PurchaseService {
@@ -41,27 +42,46 @@ class PurchaseService {
       throw new TypeError("purchaseData es requerido y debe ser un objeto");
     }
 
-    const { clientId, cardType } = purchaseData;
-    let { amount, day, isInternational } = purchaseData;
+    const { clientId, purchaseDate, purchaseCountry } = purchaseData;
+    let { amount } = purchaseData;
 
     if (!clientId) throw new TypeError("clientId es requerido");
-    if (!cardType) throw new TypeError("cardType es requerido");
+
+    // Buscar el cliente para obtener su cardType
+    const client = await ClientService.getById(clientId);
+    if (!client) {
+      throw new Error(`Cliente con ID ${clientId} no encontrado`);
+    }
+
+    const cardType = client.cardType;
+    if (!cardType) throw new TypeError("El cliente no tiene un tipo de tarjeta asignado");
+
+    // Verificar restricciones por país para tarjetas Black
+    if (cardType === 'Black' && purchaseCountry) {
+      const restrictedCountries = ['China', 'Vietnam', 'India', 'Iran'];
+      if (restrictedCountries.includes(purchaseCountry)) {
+        throw new Error(`El cliente con tarjeta ${cardType} no puede realizar compras desde ${purchaseCountry}`);
+      }
+    }
+
+    // Determinar si es compra internacional
+    const clientCountry = client.country || '';
+    const buyCountry = purchaseCountry || '';
+    const isInternational = buyCountry && buyCountry.toLowerCase() !== clientCountry.toLowerCase();
+    
+    // Determinar el día de la semana si se proporciona purchaseDate
+    let dayName;
+    if (purchaseDate) {
+      const date = new Date(purchaseDate);
+      const dayNumber = date.getDay(); // 0 = domingo, 1 = lunes, ..., 6 = sábado
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      dayName = dayNames[dayNumber];
+    }
 
     const numAmount = Number(amount);
     if (!Number.isFinite(numAmount) || numAmount <= 0) {
       throw new TypeError("amount debe ser un número positivo");
     }
-
-    const parsedDay =
-      day === undefined || day === null ? undefined : Number(day);
-    if (
-      parsedDay !== undefined &&
-      (!Number.isInteger(parsedDay) || parsedDay < 1 || parsedDay > 31)
-    ) {
-      throw new TypeError("day debe ser un entero entre 1 y 31 cuando se proporciona");
-    }
-
-    const isIntl = Boolean(isInternational);
 
     let discount = 0;
     try {
@@ -69,8 +89,8 @@ class PurchaseService {
       discount = CardBenefitsService.calculateDiscount(
         cardType,
         numAmount,
-        parsedDay,
-        isIntl
+        dayName,
+        isInternational
       );
     } catch (err) {
       throw new Error("Error al calcular el descuento: " + err.message);
@@ -91,8 +111,8 @@ class PurchaseService {
       id,
       createdAt,
       cardType,
-      day: parsedDay,
-      isInternational: isIntl,
+      day: dayName,
+      isInternational: isInternational,
     });
 
     this.purchases.push(purchase);
